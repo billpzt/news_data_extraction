@@ -1,5 +1,5 @@
 from robocorp.tasks import task
-from NewsExtractor import NewsExtractor as extractor
+from NewsExtractor_ANTIGO import NewsExtractor as extractor
 
 @task
 def minimal_task():
