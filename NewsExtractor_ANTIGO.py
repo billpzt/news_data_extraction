@@ -33,10 +33,6 @@ class NewsExtractor:
         # Configure logging
         # logging.basicConfig(filename='news_extractor.log', level=logging.INFO)
 
-    # def open_site(self):
-    #     """Navigates to the given URL"""
-    #     self.browser.goto(self.base_url)
-
     def open_site(self):
         self.driver.get(self.base_url)
 
