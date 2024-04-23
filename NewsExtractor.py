@@ -2,8 +2,6 @@ import os
 import re
 import time
 
-from Article import Article
-
 import openpyxl
 import requests
 
@@ -15,6 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.action_chains import ActionChains
 
 class NewsExtractor:
@@ -24,7 +23,6 @@ class NewsExtractor:
         self.news_category = news_category
         self.driver = webdriver.Chrome()
         self.base_url = "https://www.latimes.com/"
-        # self.page = self.driver.get(self.base_url)
         self.find_one_by_xpath = find_element_by_xpath = lambda xpath: self.driver.find_element(By.XPATH, xpath)
         self.find_many_by_xpath = find_elements_by_xpath = lambda xpath: self.driver.find_elements(By.XPATH, xpath)
         self.find_one_by_id = find_element_by_id = lambda id: self.driver.find_element(By.ID, id)
@@ -33,12 +31,13 @@ class NewsExtractor:
         # logging.basicConfig(filename='news_extractor.log', level=logging.INFO)
 
     def open_site(self):
-        # Open the news site
+        """Open the news site"""
         driver = self.driver
-        driver.get(self.base_url)                
+        driver.get(self.base_url)
+        driver.maximize_window()              
     
     def click_on_search_button(self):
-        # Click on search button to open search bar
+        """Click on search button to open search bar"""
         search_button_xpath = "//button[contains(@data-element, 'search-button')]"
         search_button = None # Initialize search_button to None
         
@@ -65,27 +64,47 @@ class NewsExtractor:
         searchbar = self.find_one_by_xpath(searchbar_xpath)
         searchbar.send_keys(self.search_phrase)
         searchbar.send_keys(Keys.RETURN)
+
+
+    def filter_newest(self):
+        # Create an object of the Select class
+        select_object = Select(self.driver.find_element(By.NAME, 's'))
+        # select = WebDriverWait(self.driver, 20).until(
+        #         EC.presence_of_element_located(select_object)
+        #     )
+        select_object.select_by_value('1')
         
+    def click_on_news_category(self):
+        # self.driver.refresh()
+        category_text = self.news_category
+        category_checkbox_xpath = f'//label/span[contains(text(), "{category_text}")]'
+        checkbox = WebDriverWait(self.driver, 20).until(
+                EC.presence_of_element_located((By.XPATH, category_checkbox_xpath))
+            )
+        checkbox.click()
+
     def extract_articles_data(self):
         """Extract data from news articles"""
-        # article_xpath = '//ul[@class="search-results-module-results-menu"]/li'
-        # article_title_xpath = ".//h3[contains(@class, 'promo-title')]"
-        # article_description_xpath = ".//p[contains(@class, 'promo-description')]"
-        # article_image_xpath = ".//img[contains(@class, 'image')]"
-        # article_date_xpath = ".//p[contains(@class, 'promo-timestamp')]"
+        articles_xpath = '//ul[@class="search-results-module-results-menu"]/li'
+        article_title_xpath = './/h3[@class="promo-title"]'
+        article_description_xpath = './/p[@class="promo-description"]'
+        article_date_xpath = './/p[@class="promo-timestamp"]'
+        article_image_xpath = './/img[@class="image"]'
 
-        articles = self.driver.find_elements(By.XPATH, '//ul[@class="search-results-module-results-menu"]/li')
+        # articles = self.driver.find_elements(By.XPATH, articles_xpath)
+        articles = self.find_many_by_xpath(articles_xpath)
 
         for article in articles:
-            title = article.find_element(By.XPATH, './/h3[@class="promo-title"]').text
+            title = article.find_element(By.XPATH, article_title_xpath).text
 
             try:
-                description = article.find_element(By.XPATH, './/p[@class="promo-description"]').text
+                description = article.find_element(By.XPATH, article_description_xpath).text
             except:
                 description = ''
 
             # Convert date string to datetime object
-            date = article.find_element(By.XPATH, './/p[@class="promo-timestamp"]').text
+            date = article.find_element(By.XPATH, article_date_xpath).text
+
             # try:
             #     date = datetime.strptime(date, '%B %d, %Y')
             # except:
@@ -93,7 +112,7 @@ class NewsExtractor:
 
             # Download picture if available and extract the filename
             try:
-                e_img = article.find_element(By.XPATH, './/img[@class="image"]')
+                e_img = article.find_element(By.XPATH, article_image_xpath)
             except:
                 picture_url = ''
                 picture_filename = ''
@@ -180,6 +199,12 @@ class NewsExtractor:
         self.open_site()
         self.click_on_search_button()
         self.enter_search_phrase()
+        self.filter_newest()
+        self.click_on_news_category()
         self.extract_articles_data()
         self.save_to_excel()
         self.close_site()
+
+
+
+# //label/span[contains(text(), "aqui seu texto")]
