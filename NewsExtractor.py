@@ -5,8 +5,9 @@ import time
 import openpyxl
 import requests
 
-from RPA.Excel.Files import Files
+# from RPA.Excel.Files import Files
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -65,86 +66,115 @@ class NewsExtractor:
         searchbar.send_keys(self.search_phrase)
         searchbar.send_keys(Keys.RETURN)
 
-
     def filter_newest(self):
         # Create an object of the Select class
         select_object = Select(self.driver.find_element(By.NAME, 's'))
-        # select = WebDriverWait(self.driver, 20).until(
-        #         EC.presence_of_element_located(select_object)
-        #     )
         select_object.select_by_value('1')
+        time.sleep(5)
         
     def click_on_news_category(self):
-        # self.driver.refresh()
         category_text = self.news_category
         category_checkbox_xpath = f'//label/span[contains(text(), "{category_text}")]'
         checkbox = WebDriverWait(self.driver, 20).until(
                 EC.presence_of_element_located((By.XPATH, category_checkbox_xpath))
             )
         checkbox.click()
+        time.sleep(5)
 
     def extract_articles_data(self):
         """Extract data from news articles"""
         articles_xpath = '//ul[@class="search-results-module-results-menu"]/li'
-        article_title_xpath = './/h3[@class="promo-title"]'
+        article_title_xpath = './/div/h3[@class="promo-title"]'
         article_description_xpath = './/p[@class="promo-description"]'
         article_date_xpath = './/p[@class="promo-timestamp"]'
         article_image_xpath = './/img[@class="image"]'
 
-        # articles = self.driver.find_elements(By.XPATH, articles_xpath)
-        articles = self.find_many_by_xpath(articles_xpath)
+        articles = WebDriverWait(self.driver, 20).until(
+                EC.presence_of_all_elements_located((By.XPATH, articles_xpath))
+            )
 
+        count = 0
         for article in articles:
-            title = article.find_element(By.XPATH, article_title_xpath).text
+            # Capture and convert date string to datetime object
+            raw_date = article.find_element(By.XPATH, article_date_xpath).text
+            date = self.date_formatter(raw_date)
+            months = self.months
+            checked_date = self.date_checker(date_to_check=date, months=months)
+            print(f"Date is valid: {checked_date}")
+            if (checked_date):
+                title = article.find_element(By.XPATH, article_title_xpath).text
 
-            try:
-                description = article.find_element(By.XPATH, article_description_xpath).text
-            except:
-                description = ''
+                try:
+                    description = article.find_element(By.XPATH, article_description_xpath).text
+                except:
+                    description = ''
 
-            # Convert date string to datetime object
-            date = article.find_element(By.XPATH, article_date_xpath).text
+                # Download picture if available and extract the filename
+                try:
+                    e_img = article.find_element(By.XPATH, article_image_xpath)
+                    print(f"Encontrou imagem: {e_img}")
+                except:
+                    picture_url = ''
+                    picture_filename = ''
+                    print("Não encontrou imagem!")
+                else:
+                    picture_url = e_img.get_attribute("src")
+                    picture_filename = self.download_picture(picture_url)
+                    print(f"URL da imagem: {picture_url}")
+                    print(f"Nome do arquivo: {picture_filename}")
 
-            # try:
-            #     date = datetime.strptime(date, '%B %d, %Y')
-            # except:
-            #     date = datetime.strptime(date, '%B. %d, %Y')
+                # Count search phrase occurrences in title and description
+                count_search_phrases = (title.count(self.search_phrase) + description.count(self.search_phrase))
 
-            # Download picture if available and extract the filename
-            try:
-                e_img = article.find_element(By.XPATH, article_image_xpath)
-            except:
-                picture_url = ''
-                picture_filename = ''
+                # Check if title or description contains any amount of money
+                monetary_amount = self.contains_monetary_amount(title) or self.contains_monetary_amount(description)
+
+                # Store extracted data in a dictionary
+                article_data = {
+                    "title": title,
+                    "date": date,#.strftime("%Y-%m-%d"),
+                    "description": description,
+                    "picture_filename": picture_filename,
+                    "count_search_phrases": count_search_phrases,
+                    "monetary_amount": monetary_amount
+                }
+                
+
+                self.results.append(article_data)
+                count += 1
             else:
-                picture_url = e_img.get_attribute("src")
-                picture_filename = self.download_picture(picture_url)
+                break
 
-            # Count search phrase occurrences in title and description
-            count_search_phrases = (title.count(self.search_phrase) + description.count(self.search_phrase))
+        print(f"Extracted data from {count} articles")
 
-            # Check if title or description contains any amount of money
-            monetary_amount = self.contains_monetary_amount(title) or self.contains_monetary_amount(description)
+    def date_formatter(self, date):
+        try:
+            date = datetime.strptime(date, '%B %d, %Y')
+        except:
+            try:
+                date = datetime.strptime(date, '%b. %d, %Y')
+            except:
+                date = datetime.today() # Ex: 24/04/2024
 
-            # Store extracted data in a dictionary
-            article_data = {
-                "title": title,
-                "date": date,#.strftime("%Y-%m-%d"),
-                "description": description,
-                "picture_filename": picture_filename,
-                "count_search_phrases": count_search_phrases,
-                "monetary_amount": monetary_amount
-            }
-            
-
-            self.results.append(article_data)
+        # Ensure only the date part is stored
+        return date.date()
+    
+    def date_checker(date_to_check, months):
+        number_of_months = months
+        if (months == 0):
+            number_of_months = 1
+        # Calculate the date 'months' months ago from today
+        cutoff_date = datetime.today().date() - relativedelta(months=number_of_months)
+        # Check if the date_to_check is within the last 'months' months
+        return date_to_check >= cutoff_date
 
     def download_picture(self, picture_url):
         # Prepare the local path for the picture
         output_dir = os.path.join(os.getcwd(), "output", "images")  # Using current working directory
         os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
 
-        picture_filename = os.path.join(output_dir, os.path.basename(picture_url))
+        sanitized_filename = re.sub(r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
+        picture_filename = os.path.join(output_dir, sanitized_filename)
 
         try:
             # Download the picture
@@ -177,7 +207,7 @@ class NewsExtractor:
 
         # Write the data rows
         for result in self.results:
-            print(result)
+            # print(result)
             row = [
                 result["title"],
                 result["date"],
@@ -187,7 +217,7 @@ class NewsExtractor:
                 result["monetary_amount"]
             ]
             ws.append(row)
-        wb.save('results2.xlsx')
+        wb.save('./output/results.xlsx')
         
 
     def close_site(self):
@@ -204,7 +234,5 @@ class NewsExtractor:
         self.extract_articles_data()
         self.save_to_excel()
         self.close_site()
-
-
 
 # //label/span[contains(text(), "aqui seu texto")]
