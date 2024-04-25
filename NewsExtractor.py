@@ -81,6 +81,12 @@ class NewsExtractor:
         checkbox.click()
         time.sleep(5)
 
+    def click_on_next_page(self):
+        next_results_xpath = '//div[@class="search-results-module-next-page"]'
+        next_results_button = self.find_one_by_xpath(next_results_xpath)
+        next_results_button.click()
+
+
     def extract_articles_data(self):
         """Extract data from news articles"""
         articles_xpath = '//ul[@class="search-results-module-results-menu"]/li'
@@ -98,10 +104,11 @@ class NewsExtractor:
             # Capture and convert date string to datetime object
             raw_date = article.find_element(By.XPATH, article_date_xpath).text
             date = self.date_formatter(raw_date)
+            # joined_date = date.join(",", " ")
             months = self.months
-            checked_date = self.date_checker(date_to_check=date, months=months)
-            print(f"Date is valid: {checked_date}")
-            if (checked_date):
+            valid_date = self.date_checker(date_to_check=date, months=months)
+            print(f"Date is valid: {valid_date}")
+            if (valid_date):
                 title = article.find_element(By.XPATH, article_title_xpath).text
 
                 try:
@@ -139,13 +146,19 @@ class NewsExtractor:
                     "monetary_amount": monetary_amount
                 }
                 
-
                 self.results.append(article_data)
                 count += 1
             else:
                 break
 
         print(f"Extracted data from {count} articles")
+
+        return valid_date
+    
+    def paging_for_extraction(self, goto_next_page=True):
+        while (goto_next_page):
+            goto_next_page = self.extract_articles_data()
+            self.click_on_next_page()
 
     def date_formatter(self, date):
         try:
@@ -159,7 +172,7 @@ class NewsExtractor:
         # Ensure only the date part is stored
         return date.date()
     
-    def date_checker(date_to_check, months):
+    def date_checker(self, date_to_check, months):
         number_of_months = months
         if (months == 0):
             number_of_months = 1
@@ -231,7 +244,7 @@ class NewsExtractor:
         self.enter_search_phrase()
         self.filter_newest()
         self.click_on_news_category()
-        self.extract_articles_data()
+        self.paging_for_extraction()
         self.save_to_excel()
         self.close_site()
 
