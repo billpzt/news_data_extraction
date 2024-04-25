@@ -9,7 +9,8 @@ import requests
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
-from robocorp import browser
+# from robocorp import browser
+from RPA import Browser
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -33,17 +34,18 @@ class NewsExtractor:
         # Configure logging
         # logging.basicConfig(filename='news_extractor.log', level=logging.INFO)
 
-    def open_site(self):
-        """Open the news site"""
-        driver = self.driver
-        driver.get(self.base_url)
-        driver.maximize_window()
-
     # def open_site(self):
     #     """Open the news site"""
-    #     browser.goto(self.base_url)
-    #     page = browser.page()
-    #     page.             
+    #     driver = self.driver
+    #     driver.get(self.base_url)
+    #     driver.maximize_window()
+
+    def open_site(self):
+        """Open the news site"""
+        Browser._Selenium.open_chrome_browser(self.base_url)
+        # browser.goto(self.base_url)
+        # page = browser.page()
+        # page.             
 
 
     def click_on_search_button(self):
