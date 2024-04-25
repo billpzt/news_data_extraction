@@ -33,17 +33,17 @@ class NewsExtractor:
         # Configure logging
         # logging.basicConfig(filename='news_extractor.log', level=logging.INFO)
 
-    # def open_site(self):
-    #     """Open the news site"""
-    #     driver = self.driver
-    #     driver.get(self.base_url)
-    #     driver.maximize_window()
-
     def open_site(self):
         """Open the news site"""
-        browser.goto(self.base_url)
-        page = browser.page()
-        page.             
+        driver = self.driver
+        driver.get(self.base_url)
+        driver.maximize_window()
+
+    # def open_site(self):
+    #     """Open the news site"""
+    #     browser.goto(self.base_url)
+    #     page = browser.page()
+    #     page.             
 
 
     def click_on_search_button(self):
