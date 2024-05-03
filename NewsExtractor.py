@@ -10,11 +10,11 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 # from robocorp import browser
-from RPA.Browser.Selenium import Selenium
+from RPA.Browser.Selenium import By, Selenium
 # from RPA import Browser
 
 from selenium import webdriver
-from selenium.webdriver.common.by import By
+# from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -26,11 +26,8 @@ class NewsExtractor:
         self.search_phrase = search_phrase
         self.months = months
         self.news_category = news_category
-        self.driver = webdriver.Chrome()
+        self.browser = Selenium()
         self.base_url = "https://www.latimes.com/"
-        self.find_one_by_xpath = find_element_by_xpath = lambda xpath: self.driver.find_element(By.XPATH, xpath)
-        self.find_many_by_xpath = find_elements_by_xpath = lambda xpath: self.driver.find_elements(By.XPATH, xpath)
-        self.find_one_by_id = find_element_by_id = lambda id: self.driver.find_element(By.ID, id)
         self.results = []
         # Configure logging
         # logging.basicConfig(filename='news_extractor.log', level=logging.INFO)
@@ -43,25 +40,20 @@ class NewsExtractor:
 
     def open_site(self):
         """Open the news site"""
-        # Browser._Selenium.open_chrome_browser(self.base_url)
         page_url = self.base_url
-        Selenium.open_browser(url=page_url)
-        # browser.goto(self.base_url)
-        # page = browser.page()
-        # page.             
+        self.browser.open_available_browser(url=page_url, maximized=True)          
 
 
     def click_on_search_button(self):
         """Click on search button to open search bar"""
-        # page = browser.page()
+        browser = self.browser
         search_button_xpath = "//button[contains(@data-element, 'search-button')]"
-        search_button = None # Initialize search_button to None
         
         # Wait for the search button to be present in the DOM and interactable
         try:
             # Wait for the element to be visible and interactable
-            search_button = WebDriverWait(self.driver, 20).until(
-                EC.element_to_be_clickable((By.XPATH, search_button_xpath))
+            search_button = WebDriverWait(self.browser, 20).until(
+                EC.element_to_be_clickable(browser.find_element(search_button_xpath))
             )
             # Attempt to click the search button using Selenium's click method
             search_button.click()
@@ -70,27 +62,36 @@ class NewsExtractor:
             # If the standard click does not work, use JavaScript to click the element
             try:
                 # Use JavaScript to click the element
-                self.driver.execute_script("arguments[0].click();", search_button)
+                self.browser.click_button_when_visible(search_button)
             except Exception as e:
                 print(f"Failed to click the search button using JavaScript: {e}")
 
     def enter_search_phrase(self):
         # Enter the search phrase
+        browser = self.browser
         searchbar_xpath = "//input[contains(@name, 'q')]"
-        searchbar = self.find_one_by_xpath(searchbar_xpath)
-        searchbar.send_keys(self.search_phrase)
-        searchbar.send_keys(Keys.RETURN)
+        searchbar = browser.find_element(searchbar_xpath)
+        searchbar = WebDriverWait(self.browser, 20).until(
+                EC.element_to_be_clickable(searchbar)
+            )
+        browser.input_text(searchbar, self.search_phrase)
+        browser.press_keys(searchbar, "ENTER")
+
+    def select_option_in_dropdown(self, option_list: list):
+        for option in option_list:
+            self.button_click(tag="input", attr="value", content=get_section_and_type(option))
 
     def filter_newest(self):
         # Create an object of the Select class
-        select_object = Select(self.driver.find_element(By.NAME, 's'))
+        # select_object = Select(self.driver.find_element(By.NAME, 's'))
+        select_object = Select(self.browser.find_element(By.NAME, 's'))
         select_object.select_by_value('1')
         time.sleep(5)
         
     def click_on_news_category(self):
         category_text = self.news_category
         category_checkbox_xpath = f'//label/span[contains(text(), "{category_text}")]'
-        checkbox = WebDriverWait(self.driver, 20).until(
+        checkbox = WebDriverWait(self.browser, 20).until(
                 EC.presence_of_element_located((By.XPATH, category_checkbox_xpath))
             )
         checkbox.click()
@@ -110,7 +111,7 @@ class NewsExtractor:
         article_date_xpath = './/p[@class="promo-timestamp"]'
         article_image_xpath = './/img[@class="image"]'
 
-        articles = WebDriverWait(self.driver, 20).until(
+        articles = WebDriverWait(self.browser, 20).until(
                 EC.presence_of_all_elements_located((By.XPATH, articles_xpath))
             )
 
@@ -250,7 +251,8 @@ class NewsExtractor:
 
     def close_site(self):
         # Close the browser
-        self.driver.close()
+        # self.driver.close()
+        self.browser.close_browser()
 
     def run(self):
         # Execute the entire news extraction process
