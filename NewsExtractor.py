@@ -10,7 +10,8 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 # from robocorp import browser
-from RPA import Browser
+from RPA.Browser.Selenium import Selenium
+# from RPA import Browser
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -42,7 +43,9 @@ class NewsExtractor:
 
     def open_site(self):
         """Open the news site"""
-        Browser._Selenium.open_chrome_browser(self.base_url)
+        # Browser._Selenium.open_chrome_browser(self.base_url)
+        page_url = self.base_url
+        Selenium.open_browser(url=page_url)
         # browser.goto(self.base_url)
         # page = browser.page()
         # page.             
