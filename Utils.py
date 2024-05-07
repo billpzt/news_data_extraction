@@ -1,10 +1,19 @@
 import os
 import re
+import logging
 import requests
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 class Utils:
+    def __init__(self):
+        self.logger = logging.getLogger('NewsExtractor')
+        self.logger.setLevel(logging.INFO)
+        handler = logging.FileHandler('news_extractor.log')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+
     def date_formatter(date):
         try:
             date = datetime.strptime(date, '%B %d, %Y')
@@ -26,7 +35,7 @@ class Utils:
         # Check if the date_to_check is within the last 'months' months
         return date_to_check >= cutoff_date
 
-    def download_picture(picture_url):
+    def download_picture(self, picture_url):
         # Prepare the local path for the picture
         output_dir = os.path.join(os.getcwd(), "output", "images")  # Using current working directory
         os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
@@ -45,12 +54,11 @@ class Utils:
                     for chunk in response.iter_content(chunk_size=1024):
                         if chunk:
                             file.write(chunk)
-                print(f"Picture downloaded successfully: {picture_filename}")
                 return picture_filename
             else:
-                print(f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
+                self.logger.error(f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
         except Exception as e:
-            print(f"Error downloading picture: {e}")
+            logging.exception(e)
 
         return None
 
