@@ -1,139 +1,114 @@
-import os
-import re
 import time
-
+import logging
 import openpyxl
-import requests
 
-# from RPA.Excel.Files import Files
-from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
+from Utils import Utils
+from Locators import Locators as loc
 
-# from robocorp import browser
-from RPA.Browser.Selenium import Selenium
-# from RPA import Browser
+from RPA.Browser.Selenium import By, Selenium
+from robocorp.tasks import task
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select
-from selenium.webdriver.common.action_chains import ActionChains
+
+# from loguru import logger as loguru_logger
 
 class NewsExtractor:
     def __init__(self, search_phrase,  months=None, news_category=None):
         self.search_phrase = search_phrase
         self.months = months
         self.news_category = news_category
-        self.driver = webdriver.Chrome()
+        self.browser = Selenium()
         self.base_url = "https://www.latimes.com/"
-        self.find_one_by_xpath = find_element_by_xpath = lambda xpath: self.driver.find_element(By.XPATH, xpath)
-        self.find_many_by_xpath = find_elements_by_xpath = lambda xpath: self.driver.find_elements(By.XPATH, xpath)
-        self.find_one_by_id = find_element_by_id = lambda id: self.driver.find_element(By.ID, id)
         self.results = []
+        self.results_count = 0
         # Configure logging
-        # logging.basicConfig(filename='news_extractor.log', level=logging.INFO)
-
-    # def open_site(self):
-    #     """Open the news site"""
-    #     driver = self.driver
-    #     driver.get(self.base_url)
-    #     driver.maximize_window()
+        self.logger = logging.getLogger('NewsExtractor')
+        self.logger.setLevel(logging.INFO)
+        handler = logging.FileHandler('news_extractor.log')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
 
     def open_site(self):
         """Open the news site"""
-        # Browser._Selenium.open_chrome_browser(self.base_url)
         page_url = self.base_url
-        Selenium.open_browser(url=page_url)
-        # browser.goto(self.base_url)
-        # page = browser.page()
-        # page.             
-
+        self.browser.open_available_browser(url=page_url, maximized=True)
+        self.logger.info("Opened the news site")          
 
     def click_on_search_button(self):
-        """Click on search button to open search bar"""
-        # page = browser.page()
-        search_button_xpath = "//button[contains(@data-element, 'search-button')]"
-        search_button = None # Initialize search_button to None
-        
+        """Click on search button to open search bar"""                
         # Wait for the search button to be present in the DOM and interactable
         try:
             # Wait for the element to be visible and interactable
-            search_button = WebDriverWait(self.driver, 20).until(
-                EC.element_to_be_clickable((By.XPATH, search_button_xpath))
+            search_button = WebDriverWait(self.browser, 20).until(
+                EC.element_to_be_clickable(self.browser.find_element(loc.search_button_xpath))
             )
             # Attempt to click the search button using Selenium's click method
             search_button.click()
         except Exception as e:
-            print(f"Failed to click the search button using Selenium's click method: {e}")
+            self.logger.exception(e)
             # If the standard click does not work, use JavaScript to click the element
             try:
                 # Use JavaScript to click the element
-                self.driver.execute_script("arguments[0].click();", search_button)
+                self.browser.click_button_when_visible(search_button)
             except Exception as e:
-                print(f"Failed to click the search button using JavaScript: {e}")
-
+                self.logger.exception(e)
+                
     def enter_search_phrase(self):
         # Enter the search phrase
-        searchbar_xpath = "//input[contains(@name, 'q')]"
-        searchbar = self.find_one_by_xpath(searchbar_xpath)
-        searchbar.send_keys(self.search_phrase)
-        searchbar.send_keys(Keys.RETURN)
+        searchbar = self.browser.find_element(loc.searchbar_xpath)
+        searchbar = WebDriverWait(self.browser, 20).until(
+                EC.element_to_be_clickable(searchbar)
+            )
+        self.browser.input_text(searchbar, self.search_phrase)
+        self.browser.press_keys(searchbar, "ENTER")
 
     def filter_newest(self):
-        # Create an object of the Select class
-        select_object = Select(self.driver.find_element(By.NAME, 's'))
-        select_object.select_by_value('1')
-        time.sleep(5)
-        
+        try:
+        # Wait up to 10 seconds before throwing a TimeoutException unless it finds the element to return
+            WebDriverWait(self.browser.driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, loc.dropdown_xpath))
+            )
+            self.browser.select_from_list_by_value(loc.dropdown_xpath, "1")
+        except Exception as error:
+            self.logger.warning(f"Option not available - {str(error)}")
+    
     def click_on_news_category(self):
         category_text = self.news_category
         category_checkbox_xpath = f'//label/span[contains(text(), "{category_text}")]'
-        checkbox = WebDriverWait(self.driver, 20).until(
-                EC.presence_of_element_located((By.XPATH, category_checkbox_xpath))
-            )
-        checkbox.click()
+        checkbox = self.browser.find_element(category_checkbox_xpath)
+        self.browser.select_checkbox(checkbox)
+        # self.browser.click_element_when_visible(checkbox)
         time.sleep(5)
 
     def click_on_next_page(self):
-        next_results_xpath = '//div[@class="search-results-module-next-page"]'
-        next_results_button = self.find_one_by_xpath(next_results_xpath)
-        next_results_button.click()
-
-
+        next_results_arrow = self.browser.find_element(loc.next_results_xpath)
+        self.browser.click_element_when_clickable(next_results_arrow)
+        
     def extract_articles_data(self):
         """Extract data from news articles"""
-        articles_xpath = '//ul[@class="search-results-module-results-menu"]/li'
-        article_title_xpath = './/div/h3[@class="promo-title"]'
-        article_description_xpath = './/p[@class="promo-description"]'
-        article_date_xpath = './/p[@class="promo-timestamp"]'
-        article_image_xpath = './/img[@class="image"]'
-
-        articles = WebDriverWait(self.driver, 20).until(
-                EC.presence_of_all_elements_located((By.XPATH, articles_xpath))
-            )
-
+        articles = self.browser.get_webelements(loc.articles_xpath)
+        
         count = 0
-        for article in articles:
+        for i, r in enumerate(articles):
             # Capture and convert date string to datetime object
-            raw_date = article.find_element(By.XPATH, article_date_xpath).text
-            date = self.date_formatter(raw_date)
-            # joined_date = date.join(",", " ")
+            raw_date = r.find_element(By.XPATH, loc.article_date_xpath).text
+            date = Utils.date_formatter(date=raw_date)
             months = self.months
-            valid_date = self.date_checker(date_to_check=date, months=months)
-            print(f"Date is valid: {valid_date}")
+            valid_date = Utils.date_checker(date_to_check=date, months=months)
+
             if (valid_date):
-                title = article.find_element(By.XPATH, article_title_xpath).text
+                title = r.find_element(By.XPATH, loc.article_title_xpath).text
 
                 try:
-                    description = article.find_element(By.XPATH, article_description_xpath).text
+                    description = r.find_element(By.XPATH, loc.article_description_xpath).text
                 except:
                     description = ''
 
                 # Download picture if available and extract the filename
                 try:
-                    e_img = article.find_element(By.XPATH, article_image_xpath)
+                    e_img = r.find_element(By.XPATH, loc.article_image_xpath)
                     print(f"Encontrou imagem: {e_img}")
                 except:
                     picture_url = ''
@@ -141,7 +116,7 @@ class NewsExtractor:
                     print("Não encontrou imagem!")
                 else:
                     picture_url = e_img.get_attribute("src")
-                    picture_filename = self.download_picture(picture_url)
+                    picture_filename = Utils.download_picture(picture_url)
                     print(f"URL da imagem: {picture_url}")
                     print(f"Nome do arquivo: {picture_filename}")
 
@@ -149,12 +124,12 @@ class NewsExtractor:
                 count_search_phrases = (title.count(self.search_phrase) + description.count(self.search_phrase))
 
                 # Check if title or description contains any amount of money
-                monetary_amount = self.contains_monetary_amount(title) or self.contains_monetary_amount(description)
+                monetary_amount = Utils.contains_monetary_amount(title) or Utils.contains_monetary_amount(description)
 
                 # Store extracted data in a dictionary
                 article_data = {
                     "title": title,
-                    "date": date,#.strftime("%Y-%m-%d"),
+                    "date": date,
                     "description": description,
                     "picture_filename": picture_filename,
                     "count_search_phrases": count_search_phrases,
@@ -162,11 +137,9 @@ class NewsExtractor:
                 }
                 
                 self.results.append(article_data)
-                count += 1
+                self.results_count += 1
             else:
                 break
-
-        print(f"Extracted data from {count} articles")
 
         return valid_date
     
@@ -174,57 +147,7 @@ class NewsExtractor:
         while (goto_next_page):
             goto_next_page = self.extract_articles_data()
             self.click_on_next_page()
-
-    def date_formatter(self, date):
-        try:
-            date = datetime.strptime(date, '%B %d, %Y')
-        except:
-            try:
-                date = datetime.strptime(date, '%b. %d, %Y')
-            except:
-                date = datetime.today() # Ex: 24/04/2024
-
-        # Ensure only the date part is stored
-        return date.date()
-    
-    def date_checker(self, date_to_check, months):
-        number_of_months = months
-        if (months == 0):
-            number_of_months = 1
-        # Calculate the date 'months' months ago from today
-        cutoff_date = datetime.today().date() - relativedelta(months=number_of_months)
-        # Check if the date_to_check is within the last 'months' months
-        return date_to_check >= cutoff_date
-
-    def download_picture(self, picture_url):
-        # Prepare the local path for the picture
-        output_dir = os.path.join(os.getcwd(), "output", "images")  # Using current working directory
-        os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
-
-        sanitized_filename = re.sub(r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
-        picture_filename = os.path.join(output_dir, sanitized_filename)
-
-        try:
-            # Download the picture
-            response = requests.get(picture_url, stream=True)
-            if response.status_code == 200:
-                with open(picture_filename, 'wb') as file:
-                    for chunk in response.iter_content(chunk_size=1024):
-                        if chunk:
-                            file.write(chunk)
-                print(f"Picture downloaded successfully: {picture_filename}")
-                return picture_filename
-            else:
-                print(f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
-        except Exception as e:
-            print(f"Error downloading picture: {e}")
-
-        return None
-
-    def contains_monetary_amount(self, text):
-        # Check if the text contains any monetary amount (e.g. $11.1, 11 dollars, etc.)
-        pattern = r"\$?\d+(\.\d{2})? dollars?|USD|euro|€"
-        return bool(re.search(pattern, text))
+        print(f"Extracted data from {self.results_count} articles")
 
     def save_to_excel(self):
         wb = openpyxl.Workbook()
@@ -246,11 +169,10 @@ class NewsExtractor:
             ]
             ws.append(row)
         wb.save('./output/results.xlsx')
-        
-
+    
     def close_site(self):
         # Close the browser
-        self.driver.close()
+        self.browser.close_browser()
 
     def run(self):
         # Execute the entire news extraction process
@@ -262,5 +184,3 @@ class NewsExtractor:
         self.paging_for_extraction()
         self.save_to_excel()
         self.close_site()
-
-# //label/span[contains(text(), "aqui seu texto")]
