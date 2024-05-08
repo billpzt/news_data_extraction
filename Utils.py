@@ -65,7 +65,8 @@ class Utils:
 
     def download_picture(picture_url):
         # Prepare the local path for the picture
-        output_dir = os.path.join(os.getcwd(), "output", "images")  # Using current working directory
+        # output_dir = os.path.join(os.getcwd(), "output", "images")  # Using current working directory
+        output_dir = './output/images'
         os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
 
         sanitized_filename = re.sub(r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
@@ -85,13 +86,10 @@ class Utils:
                 print(f"Picture downloaded successfully: {picture_filename}")
                 
                 # Store the picture as an asset in Control Room
-                asset_name = sanitized_filename  # You can customize the asset name as needed
-                storage.set_file(asset_name, picture_filename)
-                print(f"Picture stored as asset: {asset_name}")
-                
+                storage.set_file(sanitized_filename, output_dir)
+                        
                 return picture_filename
-            else:
-                print(f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
+            
         except Exception as e:
             print(f"Error downloading picture: {e}")
 
