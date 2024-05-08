@@ -149,27 +149,6 @@ class NewsExtractor:
             goto_next_page = self.extract_articles_data()
             self.click_on_next_page()
         print(f"Extracted data from {self.results_count} articles")
-
-    def save_to_excel(self):
-        wb = openpyxl.Workbook()
-        ws = wb.active
-
-        headers = ["Title", "Date", "Description", "Picture Filename", "Count of Search Phrases", "Monetary Amount"]
-        ws.append(headers)
-
-        # Write the data rows
-        for result in self.results:
-            # print(result)
-            row = [
-                result["title"],
-                result["date"],
-                result["description"],
-                result["picture_filename"],
-                result["count_search_phrases"],
-                result["monetary_amount"]
-            ]
-            ws.append(row)
-        wb.save('./output/results.xlsx')
     
     def close_site(self):
         # Close the browser
@@ -183,5 +162,5 @@ class NewsExtractor:
         self.filter_newest()
         self.click_on_news_category()
         self.paging_for_extraction()
-        self.save_to_excel()
+        Utils.save_to_excel()
         self.close_site()
