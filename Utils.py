@@ -116,7 +116,7 @@ class Utils:
     #         ws.append(row)
     #     wb.save('./output/results.xlsx')
 
-    def save_to_excel(self):
+    def save_to_excel(results):
         wb = openpyxl.Workbook()
         ws = wb.active
 
@@ -124,7 +124,7 @@ class Utils:
         ws.append(headers)
 
         # Write the data rows
-        for result in self.results:
+        for result in results:
             row = [
                 result["title"],
                 result["date"],

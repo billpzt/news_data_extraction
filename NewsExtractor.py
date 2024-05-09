@@ -162,5 +162,5 @@ class NewsExtractor:
         self.filter_newest()
         self.click_on_news_category()
         self.paging_for_extraction()
-        Utils.save_to_excel()
+        Utils.save_to_excel(self.results)
         self.close_site()
