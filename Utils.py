@@ -66,7 +66,7 @@ class Utils:
     def download_picture(picture_url):
         # Prepare the local path for the picture
         # output_dir = os.path.join(os.getcwd(), "output", "images")  # Using current working directory
-        output_dir = './output/images'
+        output_dir = './'
         os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
 
         sanitized_filename = re.sub(r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
@@ -135,7 +135,7 @@ class Utils:
             ]
             ws.append(row)
         
-        excel_path = './output/results.xlsx'
+        excel_path = './results.xlsx'
         wb.save(excel_path)
         print(f"Excel file saved: {excel_path}")
         
