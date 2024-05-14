@@ -33,7 +33,9 @@ class NewsExtractor:
     def open_site(self):
         """Open the news site"""
         page_url = self.base_url
-        self.browser.open_available_browser(url=page_url, maximized=True)
+        self.browser.open_headless_chrome_browser(url=page_url)
+        # self.browser.open_chrome_browser(url=page_url, maximized=True)
+        # self.browser.open_available_browser(url=page_url, maximized=True)
         self.logger.info("Opened the news site")          
 
     def click_on_search_button(self):
