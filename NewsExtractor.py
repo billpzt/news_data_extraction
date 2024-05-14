@@ -68,7 +68,7 @@ class NewsExtractor:
         try:
         # Wait up to 10 seconds before throwing a TimeoutException unless it finds the element to return
             WebDriverWait(self.browser.driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, loc.dropdown_xpath))
+                EC.element_to_be_clickable((By.XPATH, loc.dropdown_xpath))
             )
             self.browser.select_from_list_by_value(loc.dropdown_xpath, "1")
         except Exception as error:
