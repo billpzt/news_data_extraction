@@ -6,9 +6,12 @@ from Utils import Utils
 from Locators import Locators as loc
 
 from RPA.Browser.Selenium import By, Selenium
+from robocorp.tasks import task
 
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+# from loguru import logger as loguru_logger
 
 class NewsExtractor:
     def __init__(self, search_phrase,  months=None, news_category=None):
@@ -63,7 +66,7 @@ class NewsExtractor:
 
     def filter_newest(self):
         try:
-            # Wait up to 10 seconds before throwing a TimeoutException unless it finds the element to return
+        # Wait up to 10 seconds before throwing a TimeoutException unless it finds the element to return
             WebDriverWait(self.browser.driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, loc.dropdown_xpath))
             )
@@ -72,29 +75,28 @@ class NewsExtractor:
             self.logger.warning(f"Option not available - {str(error)}")
     
     def click_on_news_category(self):
-        category_checkbox_xpath = f'//label/span[contains(text(), "{self.news_category}")]'
         try:
+            category_text = self.news_category
+            category_checkbox_xpath = f'//label/span[contains(text(), "{category_text}")]'
             WebDriverWait(self.browser.driver, 10).until(
                 EC.presence_of_element_located((By.XPATH, category_checkbox_xpath))
             )
             checkbox = self.browser.find_element(category_checkbox_xpath)
-            self.browser.select_checkbox(checkbox)
+            # self.browser.select_checkbox(checkbox)
+            self.browser.click_element_when_visible(checkbox)
         except Exception as error:
-            self.logger.exception(error)
+            self.logger.warning(f"Unable to click on checkbox - {str(error)}")
+        
+        # time.sleep(5)
 
     def click_on_next_page(self):
-        try:
-            next_results_arrow = self.browser.find_element(loc.next_results_xpath)
-            self.browser.click_element_when_clickable(next_results_arrow)
-        except Exception as error:
-            self.logger.exception(error)
-        
+        next_results_arrow = self.browser.find_element(loc.next_results_xpath)
+        self.browser.click_element_when_clickable(next_results_arrow)
         
     def extract_articles_data(self):
         """Extract data from news articles"""
         articles = self.browser.get_webelements(loc.articles_xpath)
         
-        count = 0
         for i, r in enumerate(articles):
             # Capture and convert date string to datetime object
             raw_date = r.find_element(By.XPATH, loc.article_date_xpath).text
@@ -113,13 +115,16 @@ class NewsExtractor:
                 # Download picture if available and extract the filename
                 try:
                     e_img = r.find_element(By.XPATH, loc.article_image_xpath)
+                    print(f"Encontrou imagem: {e_img}")
                 except:
                     picture_url = ''
                     picture_filename = ''
-                    self.logger.exception("Image not found")
+                    print("Não encontrou imagem!")
                 else:
                     picture_url = e_img.get_attribute("src")
                     picture_filename = Utils.download_picture(picture_url)
+                    print(f"URL da imagem: {picture_url}")
+                    print(f"Nome do arquivo: {picture_filename}")
 
                 # Count search phrase occurrences in title and description
                 count_search_phrases = (title.count(self.search_phrase) + description.count(self.search_phrase))

@@ -64,8 +64,9 @@ class Utils:
     #     return None
 
     def download_picture(picture_url):
-        output_dir = './output/images'  # It's better to specify a path relative to your robot's directory
-        os.makedirs(output_dir, exist_ok=True)
+        # Prepare the local path for the picture
+        output_dir = os.path.join(os.getcwd(), "output", "images")  # Using current working directory
+        os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
 
         sanitized_filename = re.sub(r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
         filename_root, filename_ext = os.path.splitext(sanitized_filename)
@@ -74,6 +75,7 @@ class Utils:
         picture_filename = os.path.join(output_dir, sanitized_filename)
 
         try:
+            # Download the picture
             response = requests.get(picture_url, stream=True)
             if response.status_code == 200:
                 with open(picture_filename, 'wb') as file:
@@ -82,11 +84,14 @@ class Utils:
                             file.write(chunk)
                 print(f"Picture downloaded successfully: {picture_filename}")
                 
-                # Correctly specify the full path to the file
-                storage.set_file(sanitized_filename, picture_filename)
-                        
+                # Store the picture as an asset in Control Room
+                asset_name = sanitized_filename  # You can customize the asset name as needed
+                storage.set_file(asset_name, picture_filename)
+                print(f"Picture stored as asset: {asset_name}")
+                
                 return picture_filename
-            
+            else:
+                print(f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
         except Exception as e:
             print(f"Error downloading picture: {e}")
 
@@ -120,6 +125,7 @@ class Utils:
         headers = ["Title", "Date", "Description", "Picture Filename", "Count of Search Phrases", "Monetary Amount"]
         ws.append(headers)
 
+        # Write the data rows
         for result in results:
             row = [
                 result["title"],
@@ -131,12 +137,13 @@ class Utils:
             ]
             ws.append(row)
         
-        excel_path = './output/results.xlsx'  # Specify the full path here as well
+        excel_path = './output/results.xlsx'
         wb.save(excel_path)
         print(f"Excel file saved: {excel_path}")
         
-        # Correctly specify the full path to the file
-        storage.set_file("results.xlsx", excel_path)
-        print(f"Excel file stored as asset: results.xlsx")
+        # Store the Excel file as an asset in Control Room
+        asset_name = "results.xlsx"  # You can customize the asset name as needed
+        storage.set_file(asset_name, excel_path)
+        print(f"Excel file stored as asset: {asset_name}")
 
 
