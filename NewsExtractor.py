@@ -7,6 +7,7 @@ from Locators import Locators as loc
 
 from RPA.Browser.Selenium import By, Selenium
 from robocorp.tasks import task
+from robocorp import browser
 
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -14,11 +15,11 @@ from selenium.webdriver.support import expected_conditions as EC
 # from loguru import logger as loguru_logger
 
 class NewsExtractor:
-    def __init__(self, search_phrase,  months=None, news_category=None):
+    def __init__(self, search_phrase,  months=None, news_category=None, local=True):
         self.search_phrase = search_phrase
         self.months = months
         self.news_category = news_category
-        self.browser = Selenium()
+        self.browser = browser
         self.base_url = "https://www.latimes.com/"
         self.results = []
         self.results_count = 0
@@ -29,104 +30,76 @@ class NewsExtractor:
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
+        self.local = local
 
     def open_site(self):
         """Open the news site"""
-        page_url = self.base_url
-        self.browser.open_headless_chrome_browser(url=page_url)
-        # self.browser.open_chrome_browser(url=page_url, maximized=True)
-        # self.browser.open_available_browser(url=page_url, maximized=True)
-        self.logger.info("Opened the news site")          
+        page = browser.page()
+        # Increase the timeout to 60 seconds (60000 milliseconds)
+        page.goto(self.base_url, timeout=60000)
+        self.logger.info("Opened the news site")         
 
     def click_on_search_button(self):
         """Click on search button to open search bar"""                
         # Wait for the search button to be present in the DOM and interactable
+        page = browser.page()
         try:
-            # Wait for the element to be visible and interactable
-            search_button = WebDriverWait(self.browser, 20).until(
-                EC.element_to_be_clickable(self.browser.find_element(loc.search_button_xpath))
-            )
-            # Attempt to click the search button using Selenium's click method
-            search_button.click()
+            page.click(loc.search_button_xpath)
         except Exception as e:
             self.logger.exception(e)
-            # If the standard click does not work, use JavaScript to click the element
-            try:
-                # Use JavaScript to click the element
-                self.browser.click_button_when_visible(search_button)
-            except Exception as e:
-                self.logger.exception(e)
                 
     def enter_search_phrase(self):
-        # Enter the search phrase
-        searchbar = self.browser.find_element(loc.searchbar_xpath)
-        searchbar = WebDriverWait(self.browser, 20).until(
-                EC.element_to_be_clickable(searchbar)
-            )
-        self.browser.input_text(searchbar, self.search_phrase)
-        self.browser.press_keys(searchbar, "ENTER")
+        """Enter the search phrase"""
+        page = browser.page()
+        try:
+            page.fill(loc.searchbar_xpath, self.search_phrase)
+            page.press(loc.searchbar_xpath, key="Enter")
+        except Exception as e:
+            self.logger.exception(e)
 
     def filter_newest(self):
+        """Filter only the most recent articles"""
+        page = browser.page()
         try:
-        # Wait up to 10 seconds before throwing a TimeoutException unless it finds the element to return
-            WebDriverWait(self.browser.driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, loc.dropdown_xpath))
-            )
-            self.browser.select_from_list_by_value(loc.dropdown_xpath, "1")
+            page.select_option(loc.dropdown_xpath, index=[1])
         except Exception as error:
             self.logger.warning(f"Option not available - {str(error)}")
     
     def click_on_news_category(self):
+        """Choose the news category to filter articles"""
+        page = browser.page()
         try:
             category_text = self.news_category
             category_checkbox_xpath = f'//label/span[contains(text(), "{category_text}")]'
-            WebDriverWait(self.browser.driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, category_checkbox_xpath))
-            )
-            checkbox = self.browser.find_element(category_checkbox_xpath)
-            # self.browser.select_checkbox(checkbox)
-            self.browser.click_element_when_visible(checkbox)
+            page.set_checked(category_checkbox_xpath, checked=True)
         except Exception as error:
             self.logger.warning(f"Unable to click on checkbox - {str(error)}")
-        
-        # time.sleep(5)
 
     def click_on_next_page(self):
-        next_results_arrow = self.browser.find_element(loc.next_results_xpath)
-        self.browser.click_element_when_clickable(next_results_arrow)
+        """Access next page of resultsd"""
+        page = browser.page()
+        try:
+            page.click(loc.next_results_xpath)
+        except Exception as e:
+            self.logger.warning(f"Unable to click on next page - {str(e)}")
         
     def extract_articles_data(self):
         """Extract data from news articles"""
-        articles = self.browser.get_webelements(loc.articles_xpath)
+        page = browser.page()
+        articles = page.locator(loc.articles_xpath).element_handles()
         
-        for i, r in enumerate(articles):
+        for article in articles:
             # Capture and convert date string to datetime object
-            raw_date = r.find_element(By.XPATH, loc.article_date_xpath).text
+            raw_date = article.query_selector(loc.article_date_xpath).text_content()
             date = Utils.date_formatter(date=raw_date)
             months = self.months
             valid_date = Utils.date_checker(date_to_check=date, months=months)
 
             if (valid_date):
-                title = r.find_element(By.XPATH, loc.article_title_xpath).text
+                title = article.query_selector(loc.article_title_xpath).text_content()
+                description = article.query_selector(loc.article_description_xpath).text_content()
 
-                try:
-                    description = r.find_element(By.XPATH, loc.article_description_xpath).text
-                except:
-                    description = ''
-
-                # Download picture if available and extract the filename
-                try:
-                    e_img = r.find_element(By.XPATH, loc.article_image_xpath)
-                    print(f"Encontrou imagem: {e_img}")
-                except:
-                    picture_url = ''
-                    picture_filename = ''
-                    print("Não encontrou imagem!")
-                else:
-                    picture_url = e_img.get_attribute("src")
-                    picture_filename = Utils.download_picture(picture_url)
-                    print(f"URL da imagem: {picture_url}")
-                    print(f"Nome do arquivo: {picture_filename}")
+                picture_filename = Utils.picture_extraction(self.local, article=article)
 
                 # Count search phrase occurrences in title and description
                 count_search_phrases = (title.count(self.search_phrase) + description.count(self.search_phrase))
@@ -148,7 +121,6 @@ class NewsExtractor:
                 self.results_count += 1
             else:
                 break
-
         return valid_date
     
     def paging_for_extraction(self, goto_next_page=True):
@@ -156,18 +128,16 @@ class NewsExtractor:
             goto_next_page = self.extract_articles_data()
             self.click_on_next_page()
         print(f"Extracted data from {self.results_count} articles")
-    
-    def close_site(self):
-        # Close the browser
-        self.browser.close_browser()
 
     def run(self):
         # Execute the entire news extraction process
         self.open_site()
         self.click_on_search_button()
         self.enter_search_phrase()
-        self.filter_newest()
         self.click_on_news_category()
+        self.filter_newest()
         self.paging_for_extraction()
-        Utils.save_to_excel(self.results)
-        self.close_site()
+        if self.local:
+            Utils.LOCAL_save_to_excel(self.results)
+        else:
+            Utils.save_to_excel(self.results)

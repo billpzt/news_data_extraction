@@ -1,3 +1,23 @@
 2024-05-13 17:50:51,501 - NewsExtractor - INFO - Opened the news site
 2024-05-14 15:11:42,168 - NewsExtractor - INFO - Opened the news site
 2024-05-14 16:33:22,545 - NewsExtractor - INFO - Opened the news site
+2024-05-31 13:50:17,031 - NewsExtractor - INFO - Opened the news site
+2024-05-31 13:50:19,927 - NewsExtractor - WARNING - Option not available - 'int' object is not iterable
+2024-05-31 13:50:19,928 - NewsExtractor - WARNING - Unable to click on checkbox - Page.set_checked() missing 1 required positional argument: 'checked'
+2024-05-31 13:53:13,398 - NewsExtractor - INFO - Opened the news site
+2024-05-31 13:53:14,757 - NewsExtractor - WARNING - Unable to click on checkbox - Page.set_checked() missing 1 required positional argument: 'checked'
+2024-05-31 14:34:41,732 - NewsExtractor - INFO - Opened the news site
+2024-05-31 14:34:45,275 - NewsExtractor - WARNING - Unable to click on checkbox - Page.set_checked() missing 1 required positional argument: 'checked'
+2024-05-31 14:40:14,793 - NewsExtractor - INFO - Opened the news site
+2024-05-31 14:40:17,846 - NewsExtractor - WARNING - Unable to click on checkbox - Page.set_checked() missing 1 required positional argument: 'checked'
+2024-05-31 14:51:11,817 - NewsExtractor - INFO - Opened the news site
+2024-05-31 14:51:15,013 - NewsExtractor - WARNING - Unable to click on checkbox - Page.set_checked() missing 1 required positional argument: 'checked'
+2024-05-31 14:53:42,117 - NewsExtractor - INFO - Opened the news site
+2024-05-31 14:59:52,392 - NewsExtractor - INFO - Opened the news site
+2024-05-31 15:08:35,996 - NewsExtractor - INFO - Opened the news site
+2024-05-31 15:10:42,749 - NewsExtractor - INFO - Opened the news site
+2024-05-31 15:10:45,302 - NewsExtractor - WARNING - Option not available - 'int' object is not iterable
+2024-05-31 15:16:33,520 - NewsExtractor - INFO - Opened the news site
+2024-05-31 15:17:46,477 - NewsExtractor - INFO - Opened the news site
+2024-05-31 15:24:47,951 - NewsExtractor - INFO - Opened the news site
+2024-05-31 15:48:04,260 - NewsExtractor - INFO - Opened the news site

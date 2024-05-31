@@ -5,6 +5,8 @@ import requests
 import openpyxl
 from robocorp import storage
 
+from Locators import Locators as loc
+
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
@@ -35,33 +37,33 @@ class Utils:
         pattern = r"\$?\d+(\.\d{2})? dollars?|USD|euro|€"
         return bool(re.search(pattern, text))
 
-    # def download_picture(picture_url):
-    #     # Prepare the local path for the picture
-    #     output_dir = os.path.join(os.getcwd(), "output", "images")  # Using current working directory
-    #     os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
+    def LOCAL_download_picture(picture_url):
+        # Prepare the local path for the picture
+        output_dir = os.path.join(os.getcwd(), "output", "images")  # Using current working directory
+        os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
 
-    #     sanitized_filename = re.sub(r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
-    #     filename_root, filename_ext = os.path.splitext(sanitized_filename)
-    #     if filename_ext.lower() != '.jpg':
-    #         sanitized_filename += ".jpg"
-    #     picture_filename = os.path.join(output_dir, sanitized_filename)
+        sanitized_filename = re.sub(r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
+        filename_root, filename_ext = os.path.splitext(sanitized_filename)
+        if filename_ext.lower() != '.jpg':
+            sanitized_filename += ".jpg"
+        picture_filename = os.path.join(output_dir, sanitized_filename)
 
-    #     try:
-    #         # Download the picture
-    #         response = requests.get(picture_url, stream=True)
-    #         if response.status_code == 200:
-    #             with open(picture_filename, 'wb') as file:
-    #                 for chunk in response.iter_content(chunk_size=1024):
-    #                     if chunk:
-    #                         file.write(chunk)
-    #             print(f"Picture downloaded successfully: {picture_filename}")
-    #             return picture_filename
-    #         else:
-    #             print(f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
-    #     except Exception as e:
-    #         print(f"Error downloading picture: {e}")
+        try:
+            # Download the picture
+            response = requests.get(picture_url, stream=True)
+            if response.status_code == 200:
+                with open(picture_filename, 'wb') as file:
+                    for chunk in response.iter_content(chunk_size=1024):
+                        if chunk:
+                            file.write(chunk)
+                print(f"Picture downloaded successfully: {picture_filename}")
+                return picture_filename
+            else:
+                print(f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
+        except Exception as e:
+            print(f"Error downloading picture: {e}")
 
-    #     return None
+        return None
 
     def download_picture(picture_url):
         # Prepare the local path for the picture
@@ -96,27 +98,42 @@ class Utils:
             print(f"Error downloading picture: {e}")
 
         return None
+    
+    def picture_extraction(local, article):
+        # Download picture if available and extract the filename
+        try:
+            e_img = article.query_selector(loc.article_image_xpath).as_element()
+        except:
+            picture_url = ''
+            picture_filename = ''
+        else:
+            picture_url = e_img.get_attribute("src")
+            if local:
+                picture_filename = Utils.LOCAL_download_picture(picture_url)
+            else:
+                picture_filename = Utils.download_picture(picture_url)
+        return picture_filename
 
-    # def save_to_excel(self):
-    #     wb = openpyxl.Workbook()
-    #     ws = wb.active
+    def LOCAL_save_to_excel(results):
+        wb = openpyxl.Workbook()
+        ws = wb.active
 
-    #     headers = ["Title", "Date", "Description", "Picture Filename", "Count of Search Phrases", "Monetary Amount"]
-    #     ws.append(headers)
+        headers = ["Title", "Date", "Description", "Picture Filename", "Count of Search Phrases", "Monetary Amount"]
+        ws.append(headers)
 
-    #     # Write the data rows
-    #     for result in self.results:
-    #         # print(result)
-    #         row = [
-    #             result["title"],
-    #             result["date"],
-    #             result["description"],
-    #             result["picture_filename"],
-    #             result["count_search_phrases"],
-    #             result["monetary_amount"]
-    #         ]
-    #         ws.append(row)
-    #     wb.save('./output/results.xlsx')
+        # Write the data rows
+        for result in results:
+            # print(result)
+            row = [
+                result["title"],
+                result["date"],
+                result["description"],
+                result["picture_filename"],
+                result["count_search_phrases"],
+                result["monetary_amount"]
+            ]
+            ws.append(row)
+        wb.save('./output/results.xlsx')
 
     def save_to_excel(results):
         wb = openpyxl.Workbook()
