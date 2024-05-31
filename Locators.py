@@ -7,6 +7,6 @@ class Locators():
     articles_xpath = '//ul[@class="search-results-module-results-menu"]/li'
     
     article_title_xpath = '//div/h3[@class="promo-title"]'
-    article_description_xpath = './/p[@class="promo-description"]'
+    article_description_xpath = '//p[@class="promo-description"]'
     article_date_xpath = '//p[@class="promo-timestamp"]'
     article_image_xpath = '//img[@class="image"]'

@@ -87,7 +87,6 @@ class NewsExtractor:
         """Extract data from news articles"""
         page = browser.page()
         articles = page.locator(loc.articles_xpath).element_handles()
-        
         for article in articles:
             # Capture and convert date string to datetime object
             raw_date = article.query_selector(loc.article_date_xpath).text_content()
@@ -98,7 +97,6 @@ class NewsExtractor:
             if (valid_date):
                 title = article.query_selector(loc.article_title_xpath).text_content()
                 description = article.query_selector(loc.article_description_xpath).text_content()
-
                 picture_filename = Utils.picture_extraction(self.local, article=article)
 
                 # Count search phrase occurrences in title and description
@@ -125,7 +123,7 @@ class NewsExtractor:
     
     def paging_for_extraction(self, goto_next_page=True):
         while (goto_next_page):
-            goto_next_page = self.extract_articles_data()
+            self.extract_articles_data()
             self.click_on_next_page()
         print(f"Extracted data from {self.results_count} articles")
 
