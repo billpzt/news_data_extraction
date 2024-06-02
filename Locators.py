@@ -5,6 +5,7 @@ class Locators():
     next_results_xpath = '//div[@class="search-results-module-next-page"]'
     
     articles_xpath = '//ul[@class="search-results-module-results-menu"]/li'
+    # articles_xpath = '//ps-search-filters/div/main/ul'
     
     article_title_xpath = '//div/h3[@class="promo-title"]'
     article_description_xpath = '//p[@class="promo-description"]'

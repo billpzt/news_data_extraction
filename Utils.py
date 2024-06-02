@@ -1,5 +1,9 @@
 import os
 import re
+
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+
 import requests
 
 import openpyxl
@@ -7,8 +11,8 @@ from robocorp import storage
 
 from Locators import Locators as loc
 
-from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
+
+
 
 class Utils:
     def date_formatter(date):
@@ -18,11 +22,11 @@ class Utils:
             try:
                 date = datetime.strptime(date, '%b. %d, %Y')
             except:
-                date = datetime.today() # Ex: 24/04/2024
+                date = datetime.today()  # Ex: 24/04/2024
 
         # Ensure only the date part is stored
         return date.date()
-    
+
     def date_checker(date_to_check, months):
         number_of_months = months
         if (months == 0):
@@ -31,7 +35,7 @@ class Utils:
         cutoff_date = datetime.today().date() - relativedelta(months=number_of_months)
         # Check if the date_to_check is within the last 'months' months
         return date_to_check >= cutoff_date
-    
+
     def contains_monetary_amount(text):
         # Check if the text contains any monetary amount (e.g. $11.1, 11 dollars, etc.)
         pattern = r"\$?\d+(\.\d{2})? dollars?|USD|euro|€"
@@ -39,10 +43,12 @@ class Utils:
 
     def LOCAL_download_picture(picture_url):
         # Prepare the local path for the picture
-        output_dir = os.path.join(os.getcwd(), "output", "images")  # Using current working directory
+        # Using current working directory
+        output_dir = os.path.join(os.getcwd(), "output", "images")
         os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
 
-        sanitized_filename = re.sub(r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
+        sanitized_filename = re.sub(
+            r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
         filename_root, filename_ext = os.path.splitext(sanitized_filename)
         if filename_ext.lower() != '.jpg':
             sanitized_filename += ".jpg"
@@ -59,7 +65,9 @@ class Utils:
                 print(f"Picture downloaded successfully: {picture_filename}")
                 return picture_filename
             else:
-                print(f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
+                picture_filename = "No picture found"
+                print(
+                    f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
         except Exception as e:
             print(f"Error downloading picture: {e}")
 
@@ -67,10 +75,12 @@ class Utils:
 
     def download_picture(picture_url):
         # Prepare the local path for the picture
-        output_dir = os.path.join(os.getcwd(), "output", "images")  # Using current working directory
+        # Using current working directory
+        output_dir = os.path.join(os.getcwd(), "output", "images")
         os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
 
-        sanitized_filename = re.sub(r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
+        sanitized_filename = re.sub(
+            r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
         filename_root, filename_ext = os.path.splitext(sanitized_filename)
         if filename_ext.lower() != '.jpg':
             sanitized_filename += ".jpg"
@@ -85,24 +95,26 @@ class Utils:
                         if chunk:
                             file.write(chunk)
                 print(f"Picture downloaded successfully: {picture_filename}")
-                
+
                 # Store the picture as an asset in Control Room
                 asset_name = sanitized_filename  # You can customize the asset name as needed
                 storage.set_file(asset_name, picture_filename)
                 print(f"Picture stored as asset: {asset_name}")
-                
+
                 return picture_filename
             else:
-                print(f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
+                print(
+                    f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
         except Exception as e:
             print(f"Error downloading picture: {e}")
 
         return None
-    
+
     def picture_extraction(local, article):
         # Download picture if available and extract the filename
         try:
-            e_img = article.query_selector(loc.article_image_xpath).as_element()
+            e_img = article.query_selector(
+                loc.article_image_xpath).as_element()
         except:
             picture_url = ''
             picture_filename = ''
@@ -118,7 +130,8 @@ class Utils:
         wb = openpyxl.Workbook()
         ws = wb.active
 
-        headers = ["Title", "Date", "Description", "Picture Filename", "Count of Search Phrases", "Monetary Amount"]
+        headers = ["Title", "Date", "Description", "Picture Filename",
+                   "Count of Search Phrases", "Monetary Amount"]
         ws.append(headers)
 
         # Write the data rows
@@ -139,7 +152,8 @@ class Utils:
         wb = openpyxl.Workbook()
         ws = wb.active
 
-        headers = ["Title", "Date", "Description", "Picture Filename", "Count of Search Phrases", "Monetary Amount"]
+        headers = ["Title", "Date", "Description", "Picture Filename",
+                   "Count of Search Phrases", "Monetary Amount"]
         ws.append(headers)
 
         # Write the data rows
@@ -153,14 +167,12 @@ class Utils:
                 result["monetary_amount"]
             ]
             ws.append(row)
-        
+
         excel_path = './output/results.xlsx'
         wb.save(excel_path)
         print(f"Excel file saved: {excel_path}")
-        
+
         # Store the Excel file as an asset in Control Room
         asset_name = "results.xlsx"  # You can customize the asset name as needed
         storage.set_file(asset_name, excel_path)
         print(f"Excel file stored as asset: {asset_name}")
-
-
