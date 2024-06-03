@@ -8,7 +8,7 @@ import requests
 
 import openpyxl
 from robocorp import storage
-from RPA.Robocorp.Storage import Storage
+# from RPA.Robocorp.Storage import Storage
 
 from Locators import Locators as loc
 
@@ -94,9 +94,15 @@ class Utils:
                             file.write(chunk)
                 print(f"Picture downloaded successfully: {picture_filename}")
 
+                # # Store the Excel file as an asset in Control Room
+                # asset_name = "results.xlsx"  # You can customize the asset name as needed
+                # storage.set_file(asset_name, excel_path)
+                # print(f"Excel file stored as asset: {asset_name}")
+
+
                 # Store the picture as an asset in Control Room
                 asset_name = sanitized_filename  # You can customize the asset name as needed
-                Storage.set_file_asset(asset_name, picture_filename)
+                storage.set_file(asset_name, f'/output/images/{picture_filename}')
                 print(f"Picture stored as asset: {asset_name}")
 
                 return picture_filename
