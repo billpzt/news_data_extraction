@@ -8,11 +8,11 @@ import requests
 
 import openpyxl
 from robocorp import storage
+from RPA.Robocorp.Storage import Storage
 
 from Locators import Locators as loc
 
-
-
+work_items = _workitem
 
 class Utils:
     def date_formatter(date):
@@ -98,7 +98,7 @@ class Utils:
 
                 # Store the picture as an asset in Control Room
                 asset_name = sanitized_filename  # You can customize the asset name as needed
-                storage.set_file(asset_name, picture_filename)
+                Storage.set_file_asset(asset_name, picture_filename)
                 print(f"Picture stored as asset: {asset_name}")
 
                 return picture_filename
