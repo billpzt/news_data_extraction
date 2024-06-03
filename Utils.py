@@ -102,7 +102,8 @@ class Utils:
 
                 # Store the picture as an asset in Control Room
                 asset_name = sanitized_filename  # You can customize the asset name as needed
-                storage.set_file(asset_name, f'/output/images/{picture_filename}')
+                picture_path = f'./output/images/{picture_filename}'
+                storage.set_file(asset_name, picture_path)
                 print(f"Picture stored as asset: {asset_name}")
 
                 return picture_filename
