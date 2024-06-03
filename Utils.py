@@ -12,8 +12,6 @@ from RPA.Robocorp.Storage import Storage
 
 from Locators import Locators as loc
 
-work_items = _workitem
-
 class Utils:
     def date_formatter(date):
         try:
