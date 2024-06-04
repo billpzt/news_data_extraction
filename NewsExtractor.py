@@ -1,5 +1,6 @@
 import logging
 from RPA.Browser.Selenium import By, Selenium
+from datetime import timedelta
 from robocorp.tasks import task
 from robocorp import browser
 import time
@@ -140,10 +141,12 @@ class NewsExtractor:
 
     def paging_for_extraction(self):
         """Handles paging while date is valid"""
-        next_page = True
-        while (next_page):
-            next_page = self.extract_articles_data()
+        goto_next_page = True
+        while (goto_next_page):
+            goto_next_page = self.extract_articles_data()
             self.click_on_next_page()
+            # Wait for a specific element on the next page to ensure it has loaded
+            browser.wait_until_page_contains_element(loc.articles_xpath, timeout=timedelta(seconds=10))
         print(f"Extracted data from {self.results_count} articles")
 
     def run(self):
