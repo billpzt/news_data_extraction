@@ -70,14 +70,16 @@ class Utils:
             print(f"Error downloading picture: {e}")
 
         return None
-
+    
     def download_picture(picture_url):
-        sanitized_filename = re.sub(
-            r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
-        filename_root, filename_ext = os.path.splitext(sanitized_filename)
-        if filename_ext.lower() != '.jpg':
+        # Ensure the output directory exists
+        output_dir = "./output"
+        os.makedirs(output_dir, exist_ok=True)
+
+        sanitized_filename = re.sub(r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
+        if not sanitized_filename.lower().endswith('.jpg'):
             sanitized_filename += ".jpg"
-        picture_filename = sanitized_filename
+        picture_filename = os.path.join(output_dir, sanitized_filename)
 
         try:
             # Download the picture
@@ -89,18 +91,62 @@ class Utils:
                             file.write(chunk)
                 print(f"Picture downloaded successfully: {picture_filename}")
 
-                picture_path = f'./output/{picture_filename}'
-                storage.set_file(picture_filename, picture_path)
-                print(f"Picture stored as asset: {picture_filename}")
+                # Store the picture as an asset in Control Room
+                storage.set_file(sanitized_filename, picture_filename)
+                print(f"Picture stored as asset: {sanitized_filename}")
 
                 return picture_filename
             else:
-                print(
-                    f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
+                print(f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
         except Exception as e:
             print(f"Error downloading picture: {e}")
 
         return None
+
+    # def download_picture(picture_url):
+    #     # Prepare the local path for the picture
+    #     # Using current working directory
+    #     output_dir = os.path.join(os.getcwd(), "output", "images")
+    #     os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
+
+    #     sanitized_filename = re.sub(
+    #         r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
+    #     filename_root, filename_ext = os.path.splitext(sanitized_filename)
+    #     if filename_ext.lower() != '.jpg':
+    #         sanitized_filename += ".jpg"
+    #     picture_filename = os.path.join(output_dir, sanitized_filename)
+
+    #     try:
+    #         # Download the picture
+    #         response = requests.get(picture_url, stream=True)
+    #         if response.status_code == 200:
+    #             with open(picture_filename, 'wb') as file:
+    #                 for chunk in response.iter_content(chunk_size=1024):
+    #                     if chunk:
+    #                         file.write(chunk)
+    #             print(f"Picture downloaded successfully: {picture_filename}")
+
+    #             # Store the picture as an asset in Control Room
+    #             # excel_path = './output/results.xlsx'
+    #             # wb.save(excel_path)
+    #             # print(f"Excel file saved: {excel_path}")
+
+    #             # # Store the Excel file as an asset in Control Room
+    #             # asset_name = "results.xlsx"  # You can customize the asset name as needed
+    #             # storage.set_file(asset_name, excel_path)
+    #             asset_name = sanitized_filename  # You can customize the asset name as needed
+    #             picture_path = f'./output/{picture_filename}'
+    #             storage.set_file(asset_name, picture_path)
+    #             print(f"Picture stored as asset: {asset_name}")
+
+    #             return picture_filename
+    #         else:
+    #             print(
+    #                 f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
+    #     except Exception as e:
+    #         print(f"Error downloading picture: {e}")
+
+    #     return None
 
     def picture_extraction(local, article):
         # Download picture if available and extract the filename
