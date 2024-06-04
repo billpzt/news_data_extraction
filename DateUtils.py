@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 class DateUtils:
+    
     @staticmethod
     def date_formatter(date_str):
         """Format date string into a date object."""

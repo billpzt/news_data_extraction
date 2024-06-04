@@ -6,13 +6,14 @@ from robocorp import storage
 from Locators import Locators as loc
 
 class FileUtils:
+
     @staticmethod
     def download_picture(picture_url, local=True):
         """Download picture and save it locally or as an asset."""
         output_dir = os.path.join(os.getcwd(), "output", "images") if local else "./output"
         os.makedirs(output_dir, exist_ok=True)
 
-        sanitized_filename = re.sub(r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
+        sanitized_filename = re.sub(r'[\\/*?:"<>|%=]', "", os.path.basename(picture_url))
         if not sanitized_filename.lower().endswith('.jpg'):
             sanitized_filename += ".jpg"
         picture_filename = os.path.join(output_dir, sanitized_filename)
