@@ -37,7 +37,7 @@ class NewsExtractor:
     def open_site(self) -> None:
         """Open the news site"""
         try:
-            page = browser.page()
+            page = self.browser.page()
             page.goto(self.base_url, timeout=60000)
             self.logger.info("Opened the news site")
         except Exception as e:
@@ -45,65 +45,62 @@ class NewsExtractor:
 
     def click_on_search_button(self):
         """Click on search button to open search bar"""
-        # Wait for the search button to be present in the DOM and interactable
-        page = browser.page()
         try:
+            page = self.browser.page()
             page.click(loc.search_button_xpath)
             self.logger.info("Clicked on search button")
         except Exception as e:
-            self.logger.exception(e)
+            self.logger.exception("Failed to click on search button: %s", e)
 
     def enter_search_phrase(self):
         """Enter the search phrase"""
-        page = browser.page()
         try:
+            page = self.browser.page()
             page.fill(loc.searchbar_xpath, self.search_phrase)
             page.press(loc.searchbar_xpath, key="Enter")
             self.logger.info("Entered search phrase")
         except Exception as e:
-            self.logger.exception(e)
+            self.logger.exception("Failed to enter search phrase: %s", e)
 
     def filter_newest(self):
         """Filter only the most recent articles"""
-        page = browser.page()
         try:
+            page = self.browser.page()
             page.select_option(loc.dropdown_xpath, index=[1])
             self.logger.info("Filtered newest articles")
         except Exception as error:
-            self.logger.warning(f"Option not available - {str(error)}")
+            self.logger.warning("Option not available: %s", e)
 
     def click_on_news_category(self):
         """Choose the news category to filter articles"""
-        page = browser.page()
         try:
-            category_text = self.news_category
-            category_checkbox_xpath = f'//label/span[contains(text(), "{category_text}")]'
+            page = self.browser.page()
+            category_checkbox_xpath = f'//label/span[contains(text(), "{self.news_category}")]'
             page.set_checked(category_checkbox_xpath, checked=True)
             self.logger.info("Clicked on news category")
-        except Exception as error:
-            self.logger.warning(f"Unable to click on checkbox - {str(error)}")
+        except Exception as e:
+            self.logger.warning("Unable to click on checkbox: %s", e)
 
     def click_on_next_page(self):
         """Access next page of resultsd"""
-        page = browser.page()
         try:
+            page = self.browser.page()
             page.click(loc.next_results_xpath)
             self.logger.info("Clicked on next page")
         except Exception as e:
-            self.logger.warning(f"Unable to click on next page - {str(e)}")
+            self.logger.warning("Unable to click on next page: %s", e)
 
     def extract_articles_data(self):
         """Extract data from news articles"""
-        page = browser.page()
+        page = self.browser.page()
         articles = page.locator(loc.articles_xpath).element_handles()
-        months = self.months
         valid_date = False
+
         for article in articles:
-            # Capture and convert date string to datetime object
             raw_date = article.query_selector(
                 loc.article_date_xpath).text_content()
             date = Utils.date_formatter(date=raw_date)
-            valid_date = Utils.date_checker(date_to_check=date, months=months)
+            valid_date = Utils.date_checker(date_to_check=date, months=self.months)
 
             if (valid_date):
                 title = article.query_selector(
@@ -113,15 +110,11 @@ class NewsExtractor:
                 picture_filename = Utils.picture_extraction(
                     self.local, article=article)
 
-                # Count search phrase occurrences in title and description
                 count_search_phrases = (title.count(
                     self.search_phrase) + description.count(self.search_phrase))
-
-                # Check if title or description contains any amount of money
                 monetary_amount = Utils.contains_monetary_amount(
                     title) or Utils.contains_monetary_amount(description)
 
-                # Store extracted data in a dictionary
                 article_data = {
                     "title": title,
                     "date": date,
@@ -143,15 +136,14 @@ class NewsExtractor:
         goto_next_page = True
         while (goto_next_page):
             goto_next_page = self.extract_articles_data()
-            self.click_on_next_page()
-            # Wait for a specific element on the next page to ensure it has loaded
-            page = browser.page()
-            page.wait_for_selector(loc.articles_xpath, state="visible", timeout=10000)
-        print(f"Extracted data from {self.results_count} articles")
+            if goto_next_page:
+                self.click_on_next_page()
+                page = browser.page()
+                page.wait_for_selector(loc.articles_xpath, state="visible", timeout=10000)
+        self.logger.info(f"Extracted data from {self.results_count} articles")
 
     def run(self):
         """Runs full extraction process"""
-        # Execute the entire news extraction process
         self.open_site()
         self.click_on_search_button()
         self.enter_search_phrase()
@@ -159,7 +151,5 @@ class NewsExtractor:
         self.click_on_news_category()
         time.sleep(5)
         self.paging_for_extraction()
-        if self.local:
-            Utils.LOCAL_save_to_excel(self.results)
-        else:
-            Utils.save_to_excel(self.results)
+        save_function = Utils.LOCAL_save_to_excel if self.local else Utils.save_to_excel
+        save_function(self.results)
