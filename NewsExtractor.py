@@ -94,7 +94,7 @@ class NewsExtractor:
         for article in articles:
             raw_date = article.query_selector(
                 loc.article_date_xpath).text_content()
-            date = DateUtils.date_formatter(date=raw_date)
+            date = DateUtils.date_formatter(date_str=raw_date)
             valid_date = DateUtils.date_checker(date_to_check=date, months=self.months)
 
             if (valid_date):
