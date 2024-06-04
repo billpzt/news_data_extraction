@@ -68,7 +68,7 @@ class NewsExtractor:
             page = self.browser.page()
             page.select_option(loc.dropdown_xpath, index=[1])
             self.logger.info("Filtered newest articles")
-        except Exception as error:
+        except Exception as e:
             self.logger.warning("Option not available: %s", e)
 
     def click_on_news_category(self):
@@ -151,5 +151,4 @@ class NewsExtractor:
         self.click_on_news_category()
         time.sleep(5)
         self.paging_for_extraction()
-        save_function = Utils.LOCAL_save_to_excel if self.local else Utils.save_to_excel
-        save_function(self.results)
+        Utils.save_to_excel(results=self.results, local=self.local)

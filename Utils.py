@@ -1,80 +1,42 @@
 import os
-from pathlib import Path
 import re
-
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-
 import requests
-
 import openpyxl
 from robocorp import storage
-# from RPA.Robocorp.Storage import Storage
-
 from Locators import Locators as loc
 
 class Utils:
-    def date_formatter(date):
-        try:
-            date = datetime.strptime(date, '%B %d, %Y')
-        except:
+
+    @staticmethod
+    def date_formatter(date_str):
+        """Format date string into a date object."""
+        date_formats = ['%B %d, %Y', '%b. %d, %Y']
+        for date_format in date_formats:
             try:
-                date = datetime.strptime(date, '%b. %d, %Y')
-            except:
-                date = datetime.today()  # Ex: 24/04/2024
+                return datetime.strptime(date_str, date_format).date()
+            except ValueError:
+                continue
+        return datetime.today().date()
 
-        # Ensure only the date part is stored
-        return date.date()
-
+    @staticmethod    
     def date_checker(date_to_check, months):
-        number_of_months = months
-        if (months == 0):
-            number_of_months = 1
-        # Calculate the date 'months' months ago from today
+        """Check if the date is within the specified months range."""
+        number_of_months = months or 1
         cutoff_date = datetime.today().date() - relativedelta(months=number_of_months)
-        # Check if the date_to_check is within the last 'months' months
         return date_to_check >= cutoff_date
-
+    
+    @staticmethod
     def contains_monetary_amount(text):
-        # Check if the text contains any monetary amount (e.g. $11.1, 11 dollars, etc.)
+        """Check if the text contains any monetary amount."""
         pattern = r"\$?\d+(\.\d{2})? dollars?|USD|euro|€"
         return bool(re.search(pattern, text))
-
-    def LOCAL_download_picture(picture_url):
-        # Prepare the local path for the picture
-        # Using current working directory
-        output_dir = os.path.join(os.getcwd(), "output", "images")
-        os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
-
-        sanitized_filename = re.sub(
-            r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
-        filename_root, filename_ext = os.path.splitext(sanitized_filename)
-        if filename_ext.lower() != '.jpg':
-            sanitized_filename += ".jpg"
-        picture_filename = os.path.join(output_dir, sanitized_filename)
-
-        try:
-            # Download the picture
-            response = requests.get(picture_url, stream=True)
-            if response.status_code == 200:
-                with open(picture_filename, 'wb') as file:
-                    for chunk in response.iter_content(chunk_size=1024):
-                        if chunk:
-                            file.write(chunk)
-                print(f"Picture downloaded successfully: {picture_filename}")
-                return picture_filename
-            else:
-                picture_filename = "No picture found"
-                print(
-                    f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
-        except Exception as e:
-            print(f"Error downloading picture: {e}")
-
-        return None
     
-    def download_picture(picture_url):
-        # Ensure the output directory exists
-        output_dir = "./output"
+    @staticmethod
+    def download_picture(picture_url, local=True):
+        """Download picture and save it locally or as an asset."""
+        output_dir = os.path.join(os.getcwd(), "output", "images") if local else "./output"
         os.makedirs(output_dir, exist_ok=True)
 
         sanitized_filename = re.sub(r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
@@ -83,74 +45,46 @@ class Utils:
         picture_filename = os.path.join(output_dir, sanitized_filename)
 
         try:
-            # Download the picture
             response = requests.get(picture_url, stream=True)
-            if response.status_code == 200:
-                with open(picture_filename, 'wb') as file:
-                    for chunk in response.iter_content(chunk_size=1024):
-                        if chunk:
-                            file.write(chunk)
-                print(f"Picture downloaded successfully: {picture_filename}")
+            response.raise_for_status()
+            with open(picture_filename, 'wb') as file:
+                for chunk in response.iter_content(chunk_size=1024):
+                    if chunk:
+                        file.write(chunk)
+            print(f"Picture downloaded successfully: {picture_filename}")
 
-                # Store the picture as an asset in Control Room
+            if not local:
                 storage.set_file(sanitized_filename, picture_filename)
-                print(f"Picture stored as asset: {sanitized_filename}")
 
                 return picture_filename
-            else:
-                print(f"Failed to download picture from {picture_url}. Status code: {response.status_code}")
-        except Exception as e:
+        except requests.RequestException as e:
             print(f"Error downloading picture: {e}")
-
-        return None
-
+            return None
+    
+    @staticmethod
     def picture_extraction(local, article):
-        # Download picture if available and extract the filename
+        """Extract picture URL from an article and download the picture."""
         try:
             e_img = article.query_selector(
                 loc.article_image_xpath).as_element()
-        except:
+            picture_url = e_img.get_attribute("src")
+        except Exception:
             picture_url = ''
             picture_filename = ''
         else:
-            picture_url = e_img.get_attribute("src")
-            if local:
-                picture_filename = Utils.LOCAL_download_picture(picture_url)
-            else:
-                picture_filename = Utils.download_picture(picture_url)
+            picture_filename = Utils.download_picture(picture_url, local)
         return picture_filename
 
-    def LOCAL_save_to_excel(results):
+    @staticmethod
+    def save_to_excel(results, local=True):
+        """Save extracted results to an Excel file."""
         wb = openpyxl.Workbook()
         ws = wb.active
 
         headers = ["Title", "Date", "Description", "Picture Filename",
-                   "Count of Search Phrases", "Monetary Amount"]
+                   "Search Phrase Count", "Monetary Amount"]
         ws.append(headers)
 
-        # Write the data rows
-        for result in results:
-            # print(result)
-            row = [
-                result["title"],
-                result["date"],
-                result["description"],
-                result["picture_filename"],
-                result["count_search_phrases"],
-                result["monetary_amount"]
-            ]
-            ws.append(row)
-        wb.save('./output/results.xlsx')
-
-    def save_to_excel(results):
-        wb = openpyxl.Workbook()
-        ws = wb.active
-
-        headers = ["Title", "Date", "Description", "Picture Filename",
-                   "Count of Search Phrases", "Monetary Amount"]
-        ws.append(headers)
-
-        # Write the data rows
         for result in results:
             row = [
                 result["title"],
@@ -162,11 +96,11 @@ class Utils:
             ]
             ws.append(row)
 
-        excel_path = './output/results.xlsx'
+        output_dir = "./output"
+        os.makedirs(output_dir, exist_ok=True)
+        excel_path = os.path.join(output_dir, 'results.xlsx')
         wb.save(excel_path)
-        print(f"Excel file saved: {excel_path}")
 
-        # Store the Excel file as an asset in Control Room
-        asset_name = "results.xlsx"  # You can customize the asset name as needed
-        storage.set_file(asset_name, excel_path)
-        print(f"Excel file stored as asset: {asset_name}")
+        if not local:
+            asset_name = "results.xlsx"
+            storage.set_file(asset_name, excel_path)
