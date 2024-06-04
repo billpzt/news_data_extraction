@@ -1,5 +1,4 @@
 import logging
-from RPA.Browser.Selenium import By, Selenium
 from datetime import timedelta
 from robocorp.tasks import task
 from robocorp import browser
@@ -146,8 +145,8 @@ class NewsExtractor:
             goto_next_page = self.extract_articles_data()
             self.click_on_next_page()
             # Wait for a specific element on the next page to ensure it has loaded
-            paging_browser_instance = Selenium()
-            paging_browser_instance.wait_until_page_contains_element(loc.articles_xpath, timeout=timedelta(seconds=10))
+            page = browser.page()
+            page.wait_for_selector(loc.articles_xpath, state="visible", timeout=5000)
         print(f"Extracted data from {self.results_count} articles")
 
     def run(self):
