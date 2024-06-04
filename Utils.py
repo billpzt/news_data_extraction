@@ -72,17 +72,12 @@ class Utils:
         return None
 
     def download_picture(picture_url):
-        # Prepare the local path for the picture
-        # Using current working directory
-        output_dir = os.path.join(os.getcwd(), "output", "images")
-        os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
-
         sanitized_filename = re.sub(
             r'[\\/*?:"<>|]', "", os.path.basename(picture_url))
         filename_root, filename_ext = os.path.splitext(sanitized_filename)
         if filename_ext.lower() != '.jpg':
             sanitized_filename += ".jpg"
-        picture_filename = os.path.join(output_dir, sanitized_filename)
+        picture_filename = sanitized_filename
 
         try:
             # Download the picture
@@ -94,17 +89,9 @@ class Utils:
                             file.write(chunk)
                 print(f"Picture downloaded successfully: {picture_filename}")
 
-                # # Store the Excel file as an asset in Control Room
-                # asset_name = "results.xlsx"  # You can customize the asset name as needed
-                # storage.set_file(asset_name, excel_path)
-                # print(f"Excel file stored as asset: {asset_name}")
-
-
-                # Store the picture as an asset in Control Room
-                asset_name = sanitized_filename  # You can customize the asset name as needed
-                picture_path = f'./output/{picture_filename}'
-                storage.set_file(asset_name, picture_path)
-                print(f"Picture stored as asset: {asset_name}")
+                picture_path = f'./output/images/{picture_filename}'
+                storage.set_file(picture_filename, picture_path)
+                print(f"Picture stored as asset: {picture_filename}")
 
                 return picture_filename
             else:
