@@ -89,7 +89,7 @@ class Utils:
                             file.write(chunk)
                 print(f"Picture downloaded successfully: {picture_filename}")
 
-                picture_path = f'./output/images/{picture_filename}'
+                picture_path = f'./output/{picture_filename}'
                 storage.set_file(picture_filename, picture_path)
                 print(f"Picture stored as asset: {picture_filename}")
 
