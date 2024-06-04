@@ -146,7 +146,7 @@ class NewsExtractor:
             self.click_on_next_page()
             # Wait for a specific element on the next page to ensure it has loaded
             page = browser.page()
-            page.wait_for_selector(loc.articles_xpath, state="visible", timeout=5000)
+            page.wait_for_selector(loc.articles_xpath, state="visible", timeout=10000)
         print(f"Extracted data from {self.results_count} articles")
 
     def run(self):
