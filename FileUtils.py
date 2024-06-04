@@ -28,14 +28,10 @@ class FileUtils:
                 for chunk in response.iter_content(chunk_size=1024):
                     if chunk:
                         file.write(chunk)
-            print(f"Picture downloaded successfully: {picture_filename}")
-
             if not local:
                 storage.set_file(sanitized_filename, picture_filename)
-
                 return picture_filename
-        except requests.RequestException as e:
-            print(f"Error downloading picture: {e}")
+        except requests.RequestException:
             return None
         
     @staticmethod
@@ -44,8 +40,14 @@ class FileUtils:
         wb = openpyxl.Workbook()
         ws = wb.active
 
-        headers = ["Title", "Date", "Description", "Picture Filename",
-                   "Search Phrase Count", "Monetary Amount"]
+        headers = [
+            "Title", 
+            "Date", 
+            "Description", 
+            "Picture Filename",
+            "Search Phrase Count", 
+            "Monetary Amount"
+        ]
         ws.append(headers)
 
         for result in results:
