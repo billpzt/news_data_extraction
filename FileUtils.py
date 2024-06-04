@@ -15,8 +15,8 @@ class FileUtils:
         output_dir = os.path.join(os.getcwd(), "output", "images") if local else "./output"
         os.makedirs(output_dir, exist_ok=True)
 
-        # sanitized_filename = re.sub(r'[\\/*?:"<>|%=]', "", os.path.basename(picture_url)).split('.com')[1]
-        sanitized_filename = Path(unquote(urlparse(picture_url).path)).name
+        sanitized_filename = re.sub(r'[\\/*?:"<>|%=]', "", os.path.basename(picture_url)).split('.com')[1]
+        # sanitized_filename = Path(unquote(urlparse(picture_url).path)).name
         if not sanitized_filename.lower().endswith('.jpg'):
             sanitized_filename += ".jpg"
         picture_filename = os.path.join(output_dir, sanitized_filename)
