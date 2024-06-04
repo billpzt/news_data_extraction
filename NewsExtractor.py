@@ -1,16 +1,11 @@
 import logging
-from datetime import timedelta
 from robocorp.tasks import task
 from robocorp import browser
 import time
-
 from Utils import Utils
+from DateUtils import DateUtils
+from FileUtils import FileUtils
 from Locators import Locators as loc
-
-
-
-# from loguru import logger as loguru_logger
-
 
 class NewsExtractor:
     def __init__(self, search_phrase,  months=None, news_category=None, local=True):
@@ -99,8 +94,8 @@ class NewsExtractor:
         for article in articles:
             raw_date = article.query_selector(
                 loc.article_date_xpath).text_content()
-            date = Utils.date_formatter(date=raw_date)
-            valid_date = Utils.date_checker(date_to_check=date, months=self.months)
+            date = DateUtils.date_formatter(date=raw_date)
+            valid_date = DateUtils.date_checker(date_to_check=date, months=self.months)
 
             if (valid_date):
                 title = article.query_selector(
@@ -110,10 +105,8 @@ class NewsExtractor:
                 picture_filename = Utils.picture_extraction(
                     self.local, article=article)
 
-                count_search_phrases = (title.count(
-                    self.search_phrase) + description.count(self.search_phrase))
-                monetary_amount = Utils.contains_monetary_amount(
-                    title) or Utils.contains_monetary_amount(description)
+                count_search_phrases = Utils.search_phrase_counter(self.search_phrase, title, description)
+                monetary_amount = Utils.contains_monetary_amount(title) or Utils.contains_monetary_amount(description)
 
                 article_data = {
                     "title": title,
@@ -151,4 +144,4 @@ class NewsExtractor:
         self.click_on_news_category()
         time.sleep(5)
         self.paging_for_extraction()
-        Utils.save_to_excel(results=self.results, local=self.local)
+        FileUtils.save_to_excel(results=self.results, local=self.local)
