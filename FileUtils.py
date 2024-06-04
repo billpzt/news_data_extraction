@@ -2,6 +2,8 @@ import os
 import re
 import requests
 import openpyxl
+from pathlib import Path
+from urllib.parse import urlparse, unquote
 from robocorp import storage
 from Locators import Locators as loc
 
@@ -13,7 +15,8 @@ class FileUtils:
         output_dir = os.path.join(os.getcwd(), "output", "images") if local else "./output"
         os.makedirs(output_dir, exist_ok=True)
 
-        sanitized_filename = re.sub(r'[\\/*?:"<>|%=]', "", os.path.basename(picture_url))
+        # sanitized_filename = re.sub(r'[\\/*?:"<>|%=]', "", os.path.basename(picture_url)).split('.com')[1]
+        sanitized_filename = Path(unquote(urlparse(picture_url).path)).name
         if not sanitized_filename.lower().endswith('.jpg'):
             sanitized_filename += ".jpg"
         picture_filename = os.path.join(output_dir, sanitized_filename)
